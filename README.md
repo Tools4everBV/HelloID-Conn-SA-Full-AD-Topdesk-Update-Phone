@@ -39,9 +39,9 @@ After the all-in-one PowerShell script has run and created all the required reso
 <table>
   <tr><td><strong>Variable name</strong></td><td><strong>Example value</strong></td><td><strong>Description</strong></td></tr>
   <tr><td>ADusersSearchOU</td><td>[{ "OU": "OU=Disabled Users,OU=HelloID Training,DC=veeken,DC=local"},{ "OU": "OU=Users,OU=HelloID Training,DC=veeken,DC=local"}]</td><td>Array of Active Directory OUs for scoping AD user accounts in the search result of this form</td></tr>
-  <tr><td>TopdeskUrl</td><td>1</td><td>2</td></tr>
-  <tr><td>TopdeskUsername</td><td>1</td><td>2</td></tr>
-  <tr><td>TopdeskAPIkey</td><td>1</td><td>2</td></tr>
+  <tr><td>TopdeskUrl</td><td>https://customer.topdesk.net</td><td>The URL to the Topdesk API</td></tr>
+  <tr><td>TopdeskUsername</td><td>helloid</td><td>The UserName to connect to the Topdesk API</td></tr>
+  <tr><td>TopdeskAPIkey</td><td>password</td><td>The Password to connect to the Topdesk API</td></tr>
 </table>
 
 ## Manual resources
@@ -58,9 +58,9 @@ This delegated form task will update two systems. On the AD user account the att
 
 ## Add another system to update
 It is possible to add another system to update the mobile and fixed phone numbers. For example for AFAS employees. The following action steps are required to add another system:
-1. Copy the global variables from the other git repository (for example the AFAS global variables)
+1. Copy the global variables from the other [github repository](https://github.com/Tools4everBV/HelloID-Conn-SA-Full-AD-AFAS-Update-Phone) (for example the AFAS global variables)
 2. Add the global variables to your HelloID tenant
-3. Open the task from the other git repository and copy the region of the other system (for example region AFAS)
+3. Open the task from the other [github repository](https://github.com/Tools4everBV/HelloID-Conn-SA-Full-AD-AFAS-Update-Phone) and copy the region of the other system (for example region AFAS)
 4. Add the region in the Task script
 
 ## Getting help
