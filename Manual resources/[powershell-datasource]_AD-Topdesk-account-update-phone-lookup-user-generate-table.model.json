@@ -1,0 +1,26 @@
+[
+  {
+    "key": "EmployeeID",
+    "type": 0
+  },
+  {
+    "key": "MobilePhone",
+    "type": 0
+  },
+  {
+    "key": "UserPrincipalName",
+    "type": 0
+  },
+  {
+    "key": "SamAccountName",
+    "type": 0
+  },
+  {
+    "key": "displayName",
+    "type": 0
+  },
+  {
+    "key": "OfficePhone",
+    "type": 0
+  }
+]
