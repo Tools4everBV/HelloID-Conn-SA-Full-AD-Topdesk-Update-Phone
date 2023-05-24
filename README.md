@@ -9,7 +9,7 @@ This HelloID Service Automation Delegated Form provides updates for mobile and f
 ## Versioning
 | Version | Description | Date |
 | - | - | - |
-| 0.1.0   | First release | 2023/05/15  |
+| 1.0.0   | First release | 2023/05/24  |
 
 <!-- TABLE OF CONTENTS -->
 ## Table of Contents
