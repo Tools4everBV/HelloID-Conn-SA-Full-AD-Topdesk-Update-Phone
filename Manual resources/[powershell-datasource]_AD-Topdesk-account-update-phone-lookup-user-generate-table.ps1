@@ -49,8 +49,6 @@ try {
         $users = $users | Where-Object { $null -ne $_.employeeID }
         $users = $users | Sort-Object -Property DisplayName
 
-        Write-Information "Successfully queried data. Result count: $(($users | Measure-Object).Count)"
-
         if (($users | Measure-Object).Count -gt 0) {
             foreach ($user in $users) {
                 $returnObject = @{
