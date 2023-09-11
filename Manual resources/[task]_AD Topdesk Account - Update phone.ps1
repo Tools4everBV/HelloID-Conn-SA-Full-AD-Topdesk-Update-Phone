@@ -212,16 +212,14 @@ function Get-TopdeskPersonByCorrelationAttribute {
 
     # Check if the correlation attribute exists in the account object set in the mapping
     if (-not([bool]$account.PSObject.Properties[$CorrelationAttribute])) {
-        $errorMessage = "The correlation attribute [$CorrelationAttribute] is  missing in the account mapping. This is a scripting issue."
+        $errorMessage = "The correlation attribute [$CorrelationAttribute] is missing in the account mapping. This is a scripting issue."
         throw $errorMessage
-        #return
     }
 
     # Check if the correlationAttribute is not empty
     if ([string]::IsNullOrEmpty($account.$CorrelationAttribute)) {
         $errorMessage = "The correlation attribute [$CorrelationAttribute] is empty. This is likely a scripting issue."
         throw $errorMessage
-        #return
     }
 
     # Lookup value is filled in, lookup value in Topdesk
@@ -230,7 +228,7 @@ function Get-TopdeskPersonByCorrelationAttribute {
         Method  = 'GET'
         Headers = $Headers
     }
-    write-verbose -verbose ($splatParams | ConvertTo-Json)
+    write-verbose ($splatParams | ConvertTo-Json)
     $responseGet = Invoke-TopdeskRestMethod @splatParams
 
     # Check if only one result is returned
