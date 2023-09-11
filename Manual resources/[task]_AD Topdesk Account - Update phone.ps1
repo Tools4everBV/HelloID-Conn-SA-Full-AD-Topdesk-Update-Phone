@@ -62,7 +62,8 @@ try {
     Write-Information "Querying AD user [$userPrincipalName]"
     $adUser = Get-ADuser -Filter { UserPrincipalName -eq $userPrincipalName } 
     Write-Information "Found AD user [$userPrincipalName]"
-} catch {
+}
+catch {
     Write-Error "Could not find AD user [$userPrincipalName]. Error: $($_.Exception.Message)"    
     $Log = @{
         Action            = "UpdateAccount" # optional. ENUM (undefined = default) 
@@ -77,39 +78,42 @@ try {
 }
 try {
     Write-Information "Start updating AD user [$userPrincipalName]"
-    if([String]::IsNullOrEmpty($phoneMobile) -eq $true) {
+    if ([String]::IsNullOrEmpty($phoneMobile) -eq $true) {
         Set-ADUser -Identity $adUSer -MobilePhone $null
-    } else {
+    }
+    else {
         Set-ADUser -Identity $adUSer -MobilePhone $phoneMobile
     }
 
-    if([String]::IsNullOrEmpty($phoneFixed) -eq $true) {
+    if ([String]::IsNullOrEmpty($phoneFixed) -eq $true) {
         Set-ADUser -Identity $adUSer -OfficePhone $null
-    } else {
+    }
+    else {
         Set-ADUser -Identity $adUSer -OfficePhone $phoneFixed
     }
     
     Write-Information "Finished update attribute [phoneMobile] of AD user [$userPrincipalName] to [$phoneMobile] and/or [officePhone] to [$phoneFixed]"
     $Log = @{
-            Action            = "UpdateAccount" # optional. ENUM (undefined = default) 
-            System            = "ActiveDirectory" # optional (free format text) 
-            Message           = "Successfully updated attribute [phoneMobile] of AD user [$userPrincipalName] to [$phoneMobile] and/or [officePhone] to [$phoneFixed]" # required (free format text) 
-            IsError           = $false # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) 
-            TargetDisplayName = $adUser.name # optional (free format text) 
-            TargetIdentifier  = $([string]$adUser.SID) # optional (free format text) 
-        }
+        Action            = "UpdateAccount" # optional. ENUM (undefined = default) 
+        System            = "ActiveDirectory" # optional (free format text) 
+        Message           = "Successfully updated attribute [phoneMobile] of AD user [$userPrincipalName] to [$phoneMobile] and/or [officePhone] to [$phoneFixed]" # required (free format text) 
+        IsError           = $false # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) 
+        TargetDisplayName = $adUser.name # optional (free format text) 
+        TargetIdentifier  = $([string]$adUser.SID) # optional (free format text) 
+    }
     #send result back  
     Write-Information -Tags "Audit" -MessageData $log    
-} catch {
+}
+catch {
     Write-Error "Could not update attribute [phoneMobile] of AD user [$userPrincipalName] to [$phoneMobile] and/or [officePhone] to [$phoneFixed]. Error: $($_.Exception.Message)"
     $Log = @{
-            Action            = "UpdateAccount" # optional. ENUM (undefined = default) 
-            System            = "ActiveDirectory" # optional (free format text) 
-            Message           = "Failed to update attribute [phoneMobile] of AD user [$userPrincipalName] to [$phoneMobile] and/or [officePhone] to [$phoneFixed]" # required (free format text) 
-            IsError           = $true # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) 
-            TargetDisplayName = $adUser.name # optional (free format text) 
-            TargetIdentifier  = $([string]$adUser.SID) # optional (free format text) 
-        }
+        Action            = "UpdateAccount" # optional. ENUM (undefined = default) 
+        System            = "ActiveDirectory" # optional (free format text) 
+        Message           = "Failed to update attribute [phoneMobile] of AD user [$userPrincipalName] to [$phoneMobile] and/or [officePhone] to [$phoneFixed]" # required (free format text) 
+        IsError           = $true # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) 
+        TargetDisplayName = $adUser.name # optional (free format text) 
+        TargetIdentifier  = $([string]$adUser.SID) # optional (free format text) 
+    }
     #send result back  
     Write-Information -Tags "Audit" -MessageData $log      
 }
@@ -176,7 +180,8 @@ function Invoke-TopdeskRestMethod {
                 $splatParams['Body'] = [Text.Encoding]::UTF8.GetBytes($Body)
             }
             Invoke-RestMethod @splatParams -Verbose:$false
-        } catch {
+        }
+        catch {
             $PSCmdlet.ThrowTerminatingError($_)
         }
     }
@@ -207,14 +212,14 @@ function Get-TopdeskPersonByCorrelationAttribute {
 
     # Check if the correlation attribute exists in the account object set in the mapping
     if (-not([bool]$account.PSObject.Properties[$CorrelationAttribute])) {
-        $errorMessage = "The correlation attribute [$CorrelationAttribute] is  missing in the account mapping. This is a scripting issue."
-        return
+        $errorMessage = "The correlation attribute [$CorrelationAttribute] is missing in the account mapping. This is a scripting issue."
+        throw $errorMessage
     }
 
     # Check if the correlationAttribute is not empty
     if ([string]::IsNullOrEmpty($account.$CorrelationAttribute)) {
         $errorMessage = "The correlation attribute [$CorrelationAttribute] is empty. This is likely a scripting issue."
-        return
+        throw $errorMessage
     }
 
     # Lookup value is filled in, lookup value in Topdesk
@@ -223,25 +228,24 @@ function Get-TopdeskPersonByCorrelationAttribute {
         Method  = 'GET'
         Headers = $Headers
     }
+    write-verbose ($splatParams | ConvertTo-Json)
     $responseGet = Invoke-TopdeskRestMethod @splatParams
 
     # Check if only one result is returned
     if ([string]::IsNullOrEmpty($responseGet.id)) {
-
         # no results found
-        Write-Output $null
-    } elseif ($responseGet.Count -eq 1) {
-
+        # Multiple records found, correlation
+        $errorMessage = "No person found with [$CorrelationAttribute] [$($account.$CorrelationAttribute)]"
+        throw $errorMessage
+    }
+    elseif ($responseGet.Count -eq 1) {
         # one record found, correlate, return user
         write-output $responseGet
-    } else {
-
+    }
+    else {
         # Multiple records found, correlation
         $errorMessage = "Multiple [$($responseGet.Count)] persons found with [$CorrelationAttribute] [$($account.$CorrelationAttribute)]. Login names: [$($responseGet.tasLoginName)]"
-        $auditLogs.Add([PSCustomObject]@{
-            Message = $errorMessage
-            IsError = $true
-        })
+        throw $errorMessage
     }
 }
 
@@ -287,98 +291,83 @@ try {
     # Account mapping. See for all possible options the Topdesk 'supporting files' API documentation at
     # https://developers.topdesk.com/explorer/?page=supporting-files#/Persons/createPerson
     $account = [PSCustomObject]@{
-        employeeNumber      = $employeeID
-        mobileNumber        = $phoneMobile
-        phoneNumber         = $phoneFixed
+        employeeNumber = $employeeID
+        mobileNumber   = $phoneMobile
+        phoneNumber    = $phoneFixed
     }
 
     $correlationAttribute = 'employeeNumber'
 
     
-        $action = 'Process'
+    $action = 'Process'
 
-        Write-Information "Querying Topdesk person [$employeeID]"
+    Write-Information "Querying Topdesk person [$employeeID]"
 
-        # Setup authentication headers
-        $authHeaders = Set-AuthorizationHeaders -UserName $username -ApiKey $apiKey
+    # Setup authentication headers
+    $authHeaders = Set-AuthorizationHeaders -UserName $username -ApiKey $apiKey
 
-        # get person
-        $splatParamsPerson = @{
-            Account                   = $account
-            CorrelationAttribute      = $correlationAttribute
-            Headers                   = $authHeaders
-            BaseUrl                   = $baseUrl
-        }
-        $TopdeskPerson = Get-TopdeskPersonByCorrelationAttribute @splatParamsPerson
-
-        if ($auditLogs.isError -contains -$true) {
-            Throw "Error(s) occured while looking up required values"
-        }
-
-        Write-Information "Found Topdesk person [$employeeID]"
-
-    } catch {
-        Write-Error "Could not update attribute [mobileNumber] of Topdesk user [$employeeID] to [$phoneMobile] and/or [phoneNumber] to [$phoneFixed]. Error: $($_.Exception.Message)"
-        $Log = @{
-                Action            = "UpdateAccount" # optional. ENUM (undefined = default) 
-                System            = "Topdesk" # optional (free format text) 
-                Message           = "Failed to update attribute [mobileNumber] of Topdesk user [$employeeID] to [$phoneMobile] and/or [phoneNumber] to [$phoneFixed]" # required (free format text) 
-                IsError           = $true # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) 
-                TargetDisplayName = $adUser.name # optional (free format text) 
-                TargetIdentifier  = $([string]$adUser.SID) # optional (free format text) 
-            }
-        #send result back  
-        Write-Information -Tags "Audit" -MessageData $log    
+    # get person
+    $splatParamsPerson = @{
+        Account              = $account
+        CorrelationAttribute = $correlationAttribute
+        Headers              = $authHeaders
+        BaseUrl              = $baseUrl
     }
-try {
+    $TopdeskPerson = Get-TopdeskPersonByCorrelationAttribute @splatParamsPerson
+
+    Write-Information "Found Topdesk person [$employeeID]"
+
     $action = 'Update'
 
     Write-Information "Start updating Topdesk person [$employeeID]"
 
     # Update TOPdesk person
     $splatParamsPersonUpdate = @{
-        TopdeskPerson   = $TopdeskPerson
-        Account         = $account
-        Headers         = $authHeaders
-        BaseUrl         = $baseUrl
+        TopdeskPerson = $TopdeskPerson
+        Account       = $account
+        Headers       = $authHeaders
+        BaseUrl       = $baseUrl
     }
     Set-TopdeskPerson @splatParamsPersonUpdate
 
     Write-Information "Finished update attribute [mobileNumber] of Topdesk user [$($TopdeskPerson.id)] to [$phoneMobile] and/or [phoneNumber] to [$phoneFixed]"
     $Log = @{
-            Action            = "UpdateAccount" # optional. ENUM (undefined = default) 
-            System            = "Topdesk" # optional (free format text) 
-            Message           = "Successfully updated attribute [mobileNumber] of Topdesk user [$($TopdeskPerson.id)] to [$phoneMobile] and/or [phoneNumber] to [$phoneFixed]" # required (free format text) 
-            IsError           = $false # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) 
-            TargetDisplayName = $displayName # optional (free format text) 
-            TargetIdentifier  = $([string]$TopdeskPerson.id) # optional (free format text) 
-        }
+        Action            = "UpdateAccount" # optional. ENUM (undefined = default) 
+        System            = "Topdesk" # optional (free format text) 
+        Message           = "Successfully updated attribute [mobileNumber] of Topdesk user [$($TopdeskPerson.id)] to [$phoneMobile] and/or [phoneNumber] to [$phoneFixed]" # required (free format text) 
+        IsError           = $false # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) 
+        TargetDisplayName = $displayName # optional (free format text) 
+        TargetIdentifier  = $([string]$TopdeskPerson.id) # optional (free format text) 
+    }
     #send result back  
     Write-Information -Tags "Audit" -MessageData $log
-} catch {
+}
+catch {
     $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
         $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
         if (-Not [string]::IsNullOrEmpty($ex.ErrorDetails.Message)) {
             $errorMessage = "Could not $action person. Error: $($ex.ErrorDetails.Message)"
-        } else {
+        }
+        else {
             #$errorObj = Resolve-HTTPError -ErrorObject $ex
             $errorMessage = "Could not $action person. Error: $($ex.Exception.Message)"
         }
-    } else {
+    }
+    else {
         $errorMessage = "Could not $action person. Error: $($ex.Exception.Message) $($ex.ScriptStackTrace)"
     }
 
     # Only log when there are no lookup values, as these generate their own audit message
     Write-Error "Failed to update attribute [mobileNumber] of Topdesk user [$employeeID] to [$phoneMobile] and/or [phoneNumber] to [$phoneFixed]: Error: $errorMessage"
     $Log = @{
-            Action            = "UpdateAccount" # optional. ENUM (undefined = default) 
-            System            = "Topdesk" # optional (free format text) 
-            Message           = "Failed to update attribute [mobileNumber] of Topdesk user [$employeeID] to [$phoneMobile] and/or [phoneNumber] to [$phoneFixed]: Error: $errorMessage" # required (free format text) 
-            IsError           = $true # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) 
-            TargetDisplayName = $displayName # optional (free format text) 
-            TargetIdentifier  = $([string]$employeeID) # optional (free format text) 
-        }
+        Action            = "UpdateAccount" # optional. ENUM (undefined = default) 
+        System            = "Topdesk" # optional (free format text) 
+        Message           = "Failed to update attribute [mobileNumber] of Topdesk user [$employeeID] to [$phoneMobile] and/or [phoneNumber] to [$phoneFixed]: Error: $errorMessage" # required (free format text) 
+        IsError           = $true # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) 
+        TargetDisplayName = $displayName # optional (free format text) 
+        TargetIdentifier  = $([string]$employeeID) # optional (free format text) 
+    }
     #send result back  
     Write-Information -Tags "Audit" -MessageData $log
 }
